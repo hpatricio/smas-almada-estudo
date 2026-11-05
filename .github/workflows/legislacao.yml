@@ -1,0 +1,33 @@
+name: Atualizar legislação de estudo
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/gerar_legislacao.py'
+      - '.github/workflows/legislacao.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar dependências
+        run: python -m pip install requests beautifulsoup4
+      - name: Gerar texto legal
+        run: python scripts/gerar_legislacao.py
+      - name: Publicar legislação gerada
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add legislacao.html
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish full required legal articles for SMAS study"
+            git push
+          fi
