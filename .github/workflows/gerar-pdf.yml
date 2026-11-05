@@ -1,0 +1,42 @@
+name: Gerar manual teórico em PDF
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'teoria.html'
+      - '.github/workflows/gerar-pdf.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Instalar gerador PDF
+        run: |
+          python -m pip install weasyprint
+      - name: Gerar PDF A4
+        run: |
+          python - <<'PY'
+          from weasyprint import HTML
+          HTML(filename="teoria.html",base_url=".").write_pdf("teoria.pdf")
+          from pathlib import Path
+          pdf=Path("teoria.pdf")
+          assert pdf.is_file() and pdf.stat().st_size>10000
+          print(f"PDF gerado: {pdf.stat().st_size} bytes")
+          PY
+      - name: Guardar no repositório para GitHub Pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add teoria.pdf
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish printable SMAS theoretical manual PDF"
+            git push
+          fi
